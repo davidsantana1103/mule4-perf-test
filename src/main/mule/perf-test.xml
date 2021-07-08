@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="f8c76ed1-1105-4692-84b3-5a0bbd96f428" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="perf-testFlow" doc:id="160bd815-89d5-4a8a-9b7b-bf9946ab3816" >
+		<http:listener doc:name="Listener" doc:id="91f2280a-9ebd-472b-b771-a6e6f769d1c1" config-ref="HTTP_Listener_config" path="/perf-test"/>
+		<ee:transform doc:name="limit" doc:id="95bbb9ac-c552-403a-b23c-ebe9851f54ff" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="limit" ><![CDATA[(attributes.headers.limit default 100) as Number]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="start" doc:id="5be73efa-fc84-4c3a-8a07-da00f136761a" message='#["perf-test start, limit: "++ (vars.limit default "")]' />
+		<foreach doc:name="For Each" doc:id="dc383b7a-00f0-45d8-aa6e-7f8f61f5dcc1" collection="#[[1 to vars.limit][0]]">
+			<ee:transform doc:name="calculate hash" doc:id="e2995d9e-68e4-481c-97a3-f4fdf446481b">
+			<ee:message>
+			</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="hash" ><![CDATA[%dw 2.0
+import dw::Crypto
+output application/json
+---
+Crypto::hashWith((vars.hash default "hello") as Binary, "SHA-512")]]></ee:set-variable>
+				</ee:variables>
+		</ee:transform>
+		</foreach>
+		<logger level="INFO" doc:name="log hash" doc:id="db9fb7a5-c178-4353-89cc-cee32dc32206" message='#["hash: " ++ vars.hash]'/>
+		<logger level="INFO" doc:name="end" doc:id="c8fa0f0d-a462-4173-a904-b649f108690f" message="perf-test end"/>
+	</flow>
+</mule>
